@@ -3,7 +3,12 @@ guid: c1f68da3b15859e409adfbd501d81b66
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: plastic_monobloc_chair_01
+    second: {fileID: 2100000, guid: 21bf5781692cb0f45ad0fdc557c9ac0c, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

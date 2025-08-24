@@ -7,6 +7,11 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: modular_chainlink_fence_posts
+    second: {fileID: 2100000, guid: fe6d7c2a769d2284696df561e45f5bc0, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: modular_chainlink_fence_wire
     second: {fileID: 2100000, guid: 96ebc0c6e3259a147b25ad7c8e773211, type: 2}
   materials:

@@ -13,6 +13,8 @@ public class CameraZoneTrigger : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
+            // Tell the player to remember the orientation they currently have.
+            playerController.PreserveCurrentOrientation();
 
             // Activate this fixed camera
             fixedCamera.SetActive(true);
@@ -38,7 +40,7 @@ public class CameraZoneTrigger : MonoBehaviour
 
             foreach (var zone in otherZones)
             {
-                if (zone != this && zone.fixedCamera.activeSelf)
+                if (zone != this && zone.GetComponent<Collider>().bounds.Contains(playerController.transform.position))
                 {
                     playerInAnotherZone = true;
                     break;
@@ -47,7 +49,10 @@ public class CameraZoneTrigger : MonoBehaviour
 
             if (!playerInAnotherZone)
             {
-                playerController.SyncOrientationToPlayerModel();
+                // Before reverting to top-down, preserve the orientation of the fixed cam we are LEAVING.
+                playerController.PreserveCurrentOrientation();
+
+                //playerController.SyncOrientationToPlayerModel();
                 // Revert to the top-down camera if no other zones are active
                 playerController.isUsingFixedCamera = false;
             }

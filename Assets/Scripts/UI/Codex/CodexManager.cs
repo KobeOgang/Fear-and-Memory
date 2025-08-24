@@ -14,7 +14,7 @@ public class CodexManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject); // Optional: if you want it to persist between scenes
+            DontDestroyOnLoad(gameObject);
         }
         else
         {
@@ -29,5 +29,10 @@ public class CodexManager : MonoBehaviour
             collectedDocuments.Add(document);
             Debug.Log("Added document to Codex: " + document.itemName);
         }
+    }
+
+    public void ApplyLoadedData(GameData data)
+    {
+        this.collectedDocuments = data.codexDocuments;
     }
 }

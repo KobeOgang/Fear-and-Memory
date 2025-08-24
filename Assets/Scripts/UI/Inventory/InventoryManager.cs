@@ -6,12 +6,12 @@ public class InventoryManager : MonoBehaviour
 {
     public static InventoryManager Instance;
 
+    public InventoryUI inventoryUI;
+
     [Header("Inventory Settings")]
     public int maxSlots = 15;
     public List<ItemData> inventory = new List<ItemData>();
 
-    // NEW: A reference to the UI script so we can tell it to update.
-    public InventoryUI inventoryUI;
 
     private void Awake()
     {
@@ -39,12 +39,16 @@ public class InventoryManager : MonoBehaviour
         inventory.Add(item);
         Debug.Log("Added item: " + item.itemName);
 
-        // Tell the UI to refresh itself if it's open
         if (inventoryUI != null && inventoryUI.inventoryUIParent.activeSelf)
         {
             inventoryUI.PopulateItemList();
         }
 
         return true;
+    }
+
+    public void ApplyLoadedData(GameData data)
+    {
+        this.inventory = data.inventoryItems;
     }
 }

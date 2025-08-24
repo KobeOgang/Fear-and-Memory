@@ -7,54 +7,84 @@ using UnityEngine.UI;
 public class InventoryUI : MonoBehaviour
 {
     [Header("UI Panels")]
-    public GameObject inventoryUIParent; // The entire inventory UI panel
+    public GameObject inventoryUIParent; // inventory UI panel
 
     [Header("List Elements")]
-    public Transform itemListContentParent;   // The parent object for the vertical list
-    public GameObject itemListItemPrefab;     // The prefab for each item in the list
+    public Transform itemListContentParent;   // parent object for the vertical list
+    public GameObject itemListItemPrefab;     // prefab for each item in the list
 
     [Header("Display Elements")]
     public Image displayItemIcon;
     public TMP_Text displayItemName;
     public TMP_Text displayItemDescription;
+    public Button useItemButton;
+
+    private PuzzleObject currentPuzzleObject; // Stores which puzzle opened the inventory
+    private ItemData selectedItemData; // Stores which item is currently selected
 
     void Start()
     {
         // Start with the inventory hidden
         inventoryUIParent.SetActive(false);
+        if (useItemButton != null)
+            useItemButton.gameObject.SetActive(false);
     }
 
     void Update()
     {
-        // Toggle inventory with Tab key
+        if (inventoryUIParent.activeSelf && currentPuzzleObject != null && Input.GetKeyDown(KeyCode.Escape))
+        {
+            CloseMenu();
+            return; // Optional: exit the Update method early after closing.
+        }
+
+        // Toggle inventory
         if (Input.GetKeyDown(KeyCode.Tab))
         {
-            // If another menu is already open, AND we are trying to open this one, do nothing.
-            if (GameUIManager.isMenuOpen && !inventoryUIParent.activeSelf)
+            // If another menu is already open, do nothing.
+            // Don't allow normal toggling if a puzzle is active or another menu is open
+            if (currentPuzzleObject != null || (GameUIManager.isMenuOpen && !inventoryUIParent.activeSelf))
             {
                 return;
             }
 
+
             bool isActive = !inventoryUIParent.activeSelf;
-            inventoryUIParent.SetActive(isActive);
-
-            // Update the global state flag
-            GameUIManager.isMenuOpen = isActive;
-
             if (isActive)
             {
-                Time.timeScale = 0f;
-                Cursor.lockState = CursorLockMode.None;
-                Cursor.visible = true;
-                PopulateItemList();
+                OpenMenu(); // Use helper function
             }
             else
             {
-                Time.timeScale = 1f;
-                Cursor.lockState = CursorLockMode.Locked;
-                Cursor.visible = false;
+                CloseMenu(); // Use helper function
             }
         }
+    }
+
+    public void OpenForPuzzle(PuzzleObject puzzleObject)
+    {
+        currentPuzzleObject = puzzleObject; // Remember which puzzle we're solving
+        OpenMenu();
+    }
+
+    private void OpenMenu()
+    {
+        inventoryUIParent.SetActive(true);
+        GameUIManager.isMenuOpen = true;
+        Time.timeScale = 0f;
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+        PopulateItemList();
+    }
+
+    private void CloseMenu()
+    {
+        inventoryUIParent.SetActive(false);
+        GameUIManager.isMenuOpen = false;
+        Time.timeScale = 1f;
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+        currentPuzzleObject = null; // IMPORTANT: Forget the puzzle when we close
     }
 
     public void PopulateItemList()
@@ -65,7 +95,6 @@ public class InventoryUI : MonoBehaviour
             Destroy(child.gameObject);
         }
 
-        // Exit if inventory is empty
         if (InventoryManager.Instance.inventory.Count == 0)
         {
             // Clear the display panel if no items are left
@@ -78,30 +107,50 @@ public class InventoryUI : MonoBehaviour
         // Create a new list item for each item in the inventory
         for (int i = InventoryManager.Instance.inventory.Count - 1; i >= 0; i--)
         {
-            ItemData item = InventoryManager.Instance.inventory[i]; // Get the item at the current index
+            ItemData item = InventoryManager.Instance.inventory[i];
 
             GameObject listItem = Instantiate(itemListItemPrefab, itemListContentParent);
             listItem.GetComponentInChildren<TMP_Text>().text = item.itemName;
             listItem.GetComponent<Button>().onClick.AddListener(() => DisplayItem(item));
         }
 
-        // Automatically select and display the first item in the list
         DisplayItem(InventoryManager.Instance.inventory[InventoryManager.Instance.inventory.Count - 1]);
     }
 
     public void DisplayItem(ItemData data)
     {
+        selectedItemData = data; // Keep track of the selected item
+
         displayItemName.text = data.itemName;
         displayItemDescription.text = data.description;
+        displayItemIcon.sprite = data.icon;
+        displayItemIcon.gameObject.SetActive(true);
 
-        if (data.icon != null)
+        // Only show the "Use" button if the inventory was opened by a puzzle
+        if (currentPuzzleObject != null)
         {
-            displayItemIcon.sprite = data.icon;
-            displayItemIcon.gameObject.SetActive(true);
+            useItemButton.gameObject.SetActive(true);
+            // Hook up the OnClick event for the button
+            useItemButton.onClick.RemoveAllListeners(); // Clear previous listeners
+            useItemButton.onClick.AddListener(OnUseButtonPressed);
         }
-        else
+    }
+
+    private void OnUseButtonPressed()
+    {
+        if (currentPuzzleObject != null && selectedItemData != null)
         {
-            displayItemIcon.gameObject.SetActive(false);
+            // Tell the puzzle object that we are using the selected item on it
+            currentPuzzleObject.UseItemOnPuzzle(selectedItemData);
+
+            // Re-populate the list in case the item was consumed
+            PopulateItemList();
+
+            // Check if the puzzle was solved and disabled itself
+            if (currentPuzzleObject.enabled == false)
+            {
+                CloseMenu();
+            }
         }
     }
 }

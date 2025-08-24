@@ -6,17 +6,39 @@ public class InteractableItem : MonoBehaviour
 {
     [Header("Item Data")]
     public ItemData itemData;         // Reference to the ScriptableObject data
-    public GameObject worldSpaceText; // Text indicator prefab (assign in Inspector)
+    public GameObject interactPrompt; // Text indicator prefab (assign in Inspector)
     /*public float pickupRange = 2f;*/
 
     private bool isPlayerNearby = false;
-    private bool isInspected = false;
+    private Outline outline;
+
+    private PersistentObjectID objectID;
+
+    private void Awake()
+    {
+        outline = GetComponent<Outline>();
+
+        if (outline != null)
+        {
+            outline.enabled = false;
+        }
+    }
 
     private void Start()
     {
-        /*SphereCollider triggerCollider = gameObject.AddComponent<SphereCollider>();
-        triggerCollider.radius = pickupRange;
-        triggerCollider.isTrigger = true;*/
+        // Ensure the prompt is hidden at the start
+        if (interactPrompt != null)
+        {
+            interactPrompt.SetActive(false);
+        }
+
+        objectID = GetComponent<PersistentObjectID>();
+
+        // This is the "check on load" part.
+        if (objectID != null && WorldStateManager.Instance.IsObjectCollected(objectID.uniqueID))
+        {
+            Destroy(gameObject); // Destroy self if already collected.
+        }
     }
 
     void Update()
@@ -24,26 +46,32 @@ public class InteractableItem : MonoBehaviour
 
         if (InspectionManager.IsInspecting) return;
 
-        // Toggle text based on proximity
-        if (worldSpaceText != null )
-            worldSpaceText.SetActive(isPlayerNearby);
-
         // Start inspection when interacting
         if (isPlayerNearby && Input.GetKeyDown(KeyCode.E))
         {
-            if (worldSpaceText != null)
-                worldSpaceText.SetActive(false);
+            // Hide the prompt when interaction starts
+            if (interactPrompt != null)
+                interactPrompt.SetActive(false);
+
             InspectionManager.Instance.StartInspection(itemData, gameObject);
         }
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        Debug.Log("Player entered trigger zone: " + other.name);
         if (other.CompareTag("Player"))
         {
-            Debug.Log("Player entered trigger zone: " + other.name);
             isPlayerNearby = true;
+            // Show prompt when player is nearby
+            if (interactPrompt != null)
+            {
+                interactPrompt.SetActive(true);
+            }
+
+            if (outline != null)
+            {
+                outline.enabled = true;
+            }
         }
     }
 
@@ -51,8 +79,17 @@ public class InteractableItem : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
-            Debug.Log("Player left trigger zone: " + other.name);
             isPlayerNearby = false;
+            // Hide prompt when player leaves
+            if (interactPrompt != null)
+            {
+                interactPrompt.SetActive(false);
+            }
+
+            if (outline != null)
+            {
+                outline.enabled = false;
+            }
         }
     }
 
